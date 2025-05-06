@@ -16,14 +16,14 @@
       return {
         player: null,
         videoOptions: {
-          autoplay: true,
+          autoplay: false,
           controls: true,
           preload: true,
           fluid: true,
           sources: [
             {
               src:
-                'https://media.geeksforgeeks.org/wp-content/uploads/20240514215354/Untitled-design-(8).mp4',
+                'https://download.samplelib.com/mp4/sample-5s.mp4',
               type: 'video/mp4',
             },
           ],

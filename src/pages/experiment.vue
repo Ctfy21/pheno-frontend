@@ -2,8 +2,22 @@
 
   import HeaderAppBar from '@/components/header-app-bar.vue';
   import VideoJsPlayer from '@/components/videoplayer.vue';
+  import { ref } from 'vue';
 
-
+  const items = [{
+    '_id': '680e15507c42ef862d891006',
+    'uid': '1300.3.3',
+    'plantType': 'Кукуруза',
+    'indicator': [
+      {
+        'indicatorType': '680e161a40c3b3daa78ad1c2',
+        'executionDate': 1745739340,
+        'value': '235',
+      },
+    ],
+    'photoUrl': [],
+    'tableId': 1,
+  }];
 </script>
 
 <template>
@@ -43,13 +57,13 @@
   </v-row>
   <v-row class="justify-center">
     <v-sheet class="w-66">
-      <VideoJsPlayer />
+      <v-data-table :items="items" />
     </v-sheet>
   </v-row>
-  <v-row>
-    <v-col>
-      5
-    </v-col>
+  <v-row class="justify-center">
+    <v-sheet class="w-66">
+      <VideoJsPlayer />
+    </v-sheet>
   </v-row>
 </template>
 

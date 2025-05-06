@@ -1,5 +1,5 @@
 <script setup>
-
+  defineProps(['title', 'startDate', 'endDate']);
 </script>
 
 <template>
@@ -13,11 +13,11 @@
     </v-stepper-header>
     <v-card class="ma-5" elevation="0">
       <v-container>
-        <p class="text-h4">Эксперимент #1</p>
+        <p class="text-h4">{{ title }}</p>
       </v-container>
       <v-container>
-        <p>Дата начала эксперимента:</p>
-        <p>Дата конца эксперимента:</p>
+        <p>Дата начала эксперимента: {{ startDate }}</p>
+        <p>Дата конца эксперимента: {{ endDate }}</p>
       </v-container>
     </v-card>
     <template #actions>
