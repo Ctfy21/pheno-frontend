@@ -1,9 +1,10 @@
 <template>
+  
   <HeaderAppBar title="Эксперименты ВНИИСБ" />
-  <v-container v-for="experiment in experiments.value" :key="experiment._id">
+  <v-container v-for="experiment in experiments" :key="experiment._id">
     <v-container class="ma-4">
       <v-row justify="center">
-        <ExperimentChooser :end-date="experiment.endDate" :start-date="experiment.startDate" :title="experiment.title" />
+        <ExperimentChooser :end-date="experiment.endDate" :start-date="experiment.startDate" :title="experiment.name" :id="experiment._id" />
       </v-row>
     </v-container>
   </v-container>
@@ -16,6 +17,16 @@
   import { getAllExperiments } from '@/scripts/api.js';
   import { ref } from 'vue';
 
-  const experiments = ref(await getAllExperiments())
-  console.log(experiments)
+  const experiments = ref([])
+
+  getAllExperiments().then(response => {
+    console.log(response)
+    experiments.value = response
+  })
 </script>
+
+<style scoped>
+.v-application {
+  background: #8ec46e58;
+}
+</style>
