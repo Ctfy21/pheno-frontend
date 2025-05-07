@@ -1,6 +1,8 @@
 <script setup>
+  import { useRouter } from 'vue-router'
   defineProps(['title', 'startDate', 'endDate', 'id']);
 
+  const router = useRouter()
 
   const formatDate = unixTime => {
     const date = new Date(unixTime * 1000);
@@ -34,7 +36,7 @@
     <template #actions>
       <v-container>
         <v-row justify="end">
-          <v-btn class="ma-5 justify-end" :href="`/experiment/${id}`">Посмотреть</v-btn>
+          <v-btn class="ma-5 justify-end" @click="router.push(`/experiment/${id}`)">Посмотреть</v-btn>
         </v-row>
       </v-container>
     </template>

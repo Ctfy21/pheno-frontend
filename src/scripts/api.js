@@ -46,6 +46,26 @@ export async function getTemperatureData(place, startDate, endDate) {
   }
 }
 
+export async function getHumidityData(place, startDate, endDate) {
+  try {
+    const response = await axios.post(`${baseURL}/environment_data/${place}/humidity`, 
+    {
+        startDate: startDate,
+        endDate: endDate
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching humidity data:', error);
+    return [];
+  }
+}
 
-
-
+export async function getIndicatorType(indicatorId) {
+  try {
+    const response = await axios.get(`${baseURL}/indicator_type/${indicatorId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching indicator type:', error);
+    return [];
+  }
+}
