@@ -69,3 +69,24 @@ export async function getIndicatorType(indicatorId) {
     return [];
   }
 }
+
+export async function importPlantsFromExcel(experimentId, file) {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await axios.post(
+      `${baseURL}/experiment/${experimentId}/import-plants`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error importing plants:', error);
+    throw error;
+  }
+}

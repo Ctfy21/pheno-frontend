@@ -11,6 +11,8 @@
 
   const plantItems = ref([])
   const experiment = ref({})
+  const dialog = ref(false)
+  const file = ref(null)
 
   const getExperiment = async experimentId => {
     const response = await getExperimentById(experimentId)
@@ -125,6 +127,23 @@
   }
 
 
+  const handleImport = async () => {
+    try {
+      if (!file.value) {
+      console.error('No file selected')
+      return
+    }
+      const response = await importPlantsFromExcel(experimentId, file.value)
+      console.log(response)
+      dialog.value = false
+      file.value = null
+      await getAllPlants()
+
+    } catch (error) {
+      console.error('Error importing plants:', error)
+    }
+  }
+
   import { Line } from 'vue-chartjs'
   import {
     CategoryScale,
@@ -165,7 +184,9 @@
 
 <template>
   <v-app>
-    <HeaderAppBar :title="experiment.name" />
+    <HeaderAppBar :title="experiment.name" >
+      <v-btn icon="mdi-database-import" @click="dialog = true" />
+    </HeaderAppBar>
 
     <v-main class="px-15">
       <v-container class="pa-0" fluid>
@@ -224,6 +245,39 @@
         </v-card>
       </v-container>
     </v-main>
+
+      <!-- Import Dialog -->
+  <v-dialog v-model="dialog" max-width="500px">
+    <v-card>
+      <v-card-title class="text-h5">
+        Импорт Растений
+      </v-card-title>
+
+      <v-card-text>
+        <v-file-input
+          v-model="file"
+          accept=".xlsx,.xls"
+          label="Выберите Excel файл"
+          prepend-icon="mdi-file-excel"
+        ></v-file-input>
+      </v-card-text>
+
+      <v-card-actions>
+        <v-spacer></v-spacer>
+        <v-btn color="error" variant="text" @click="dialog = false">
+          Отмена
+        </v-btn>
+        <v-btn
+          color="primary"
+          variant="text"
+          @click="handleImport"
+          :disabled="!file || !!errorMessage"
+        >
+          Импортировать
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
   </v-app>
 </template>
 
