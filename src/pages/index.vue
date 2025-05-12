@@ -15,20 +15,14 @@
   import ExperimentChooser from '@/components/experiment-chooser.vue';
   import HeaderAppBar from '@/components/header-app-bar.vue';
   import { getAllExperiments } from '@/scripts/api.js';
-  import { importExperiments } from '@/scripts/internal.js';
   import { ref } from 'vue';
 
   const experiments = ref([])
-  const file = ref(null)
-  const dialog = ref(false)
 
   getAllExperiments().then(response => {
     experiments.value = response
   })
 
-  const importExperimentsComponent = () => {
-    importExperiments()
-  }
 </script>
 
 <style scoped>

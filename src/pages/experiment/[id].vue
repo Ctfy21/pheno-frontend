@@ -1,5 +1,5 @@
 <script setup>
-  import { getAllPlantsOfExperiment, getExperimentById, getHumidityData, getIndicatorType, getTemperatureData } from '@/scripts/api.js';
+  import { getAllPlantsOfExperiment, getExperimentById, getHumidityData, getIndicatorType, getTemperatureData, importPlantsFromExcel } from '@/scripts/api.js';
   import { divideUID } from '@/scripts/internal.js';
   import { useRoute } from 'vue-router'
   import { ref } from 'vue'
@@ -13,6 +13,10 @@
   const experiment = ref({})
   const dialog = ref(false)
   const file = ref(null)
+  const activeTab = ref(0)
+
+  const indicatorTypes = ref([])
+  const loading = ref(true)
 
   const getExperiment = async experimentId => {
     const response = await getExperimentById(experimentId)
@@ -26,6 +30,8 @@
 
 
   const getAllPlants = async () => {
+    loading.value = true
+
     const response = await getAllPlantsOfExperiment(experimentId)
     plantItems.value = await Promise.all(response.map(async plant => ({
       uid: plant.uid,
@@ -34,13 +40,14 @@
       plant: divideUID(plant.uid)[2],
       plantType: plant.plantType,
       table: plant.tableId,
-      indicatorTypes:  String(await Promise.all(plant.indicator.map(async indicator => {
-        const response = await getIndicatorType(indicator.indicatorType)
-        return response.name
-      }))),
-    })))
+    })
+  ))
+    indicatorTypes.value = await Promise.all(response[1].indicator.map(async indicator => {
+      const response = await getIndicatorType(indicator.indicatorType)
+      return response.name
+    }))
+    loading.value = false
   }
-
 
   const infoPanels = ref([
     { title: 'Фотопериод', content: '16/8' },
@@ -180,69 +187,159 @@
       },
     },
   }
+
+  const phenotypingOptions = ref([
+    {
+      title: 'Анализ роста растений',
+      description: 'Измерение высоты, площади листьев и скорости роста',
+      icon: 'mdi-chart-line',
+      color: 'success',
+      route: `/experiment/${experimentId}/growth-analysis`
+    }
+  ])
 </script>
 
 <template>
   <v-app>
-    <HeaderAppBar :title="experiment.name" >
+    <HeaderAppBar 
+      :title="experiment.name" 
+      :tabs="['Обзор', 'Цифровое фенотипирование']"
+      v-model="activeTab"
+    >
       <v-btn icon="mdi-database-import" @click="dialog = true" />
     </HeaderAppBar>
 
     <v-main class="px-15">
       <v-container class="pa-0" fluid>
-        <v-row class="pt-6">
-          <v-col cols="12" md="3">
-            <v-sheet class="pa-4 mb-2" elevation="2">
-              <div class="text-h6 mb-2">Фотопериод</div>
-              <div>{{ infoPanels[0].content }}</div>
-              <div class="text-h6 mb-2">Температура</div>
-              <div>{{ infoPanels[1].content }}</div>
-              <div class="text-h6 mb-2">Влажность</div>
-              <div>{{ infoPanels[2].content }}</div>
-              <div class="text-h6 mb-2">Полив</div>
-              <div>{{ infoPanels[3].content }}</div>
-              <div class="text-h6 mb-2">Освещение</div>
-              <div>{{ infoPanels[4].content }}</div>
-            </v-sheet>
-          </v-col>
-          <v-col cols="12" md="9">
-            <v-row>
-              <v-col cols="12" md="6">
-                <v-card class="mb-4">
-                  <v-card-title>Температура</v-card-title>
-                  <Line :data="tempData" :options="chartOptions" />
-                </v-card>
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-card class="mb-4">
-                  <v-card-title>Влажность</v-card-title>
-                  <Line :data="humidityData" :options="chartOptions" />
-                </v-card>
-              </v-col>
-            </v-row>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col cols="12">
-            <v-card class="mt-4">
-              <v-data-table class="elevation-1" :items="plantItems" :items-per-page="10">
-                <template #item.actions>
-                  <v-btn class="elevation-0" icon size="small"><v-icon>mdi-eye</v-icon></v-btn>
-                  <v-btn class="elevation-0" icon size="small"><v-icon>mdi-pencil</v-icon></v-btn>
-                  <v-btn class="elevation-0" icon size="small"><v-icon>mdi-delete</v-icon></v-btn>
-                </template>
-              </v-data-table>
+        <!-- Overview Tab -->
+        <template v-if="activeTab === 0">
+          <v-row class="pt-6">
+            <v-col cols="12" md="3">
+              <v-card class="mb-4 pa-4" elevation="2">
+                <v-card-title class="d-flex align-center">
+                  <v-icon start color="primary" class="mr-2">mdi-flower</v-icon>
+                  Показатели растений
+                </v-card-title>
+                
+                <v-card-text>
+                  <v-skeleton-loader
+                    v-if="loading"
+                    type="list-item-two-line"
+                    :items="3"
+                  ></v-skeleton-loader>
+                  
+                  <template v-else>
+                    <v-list>
+                      <v-list-item
+                        v-for="(type, index) in indicatorTypes"
+                        :key="index"
+                        :title="type"
+                        class="mb-2"
+                      >
+                        <template v-slot:prepend>
+                          <v-icon color="primary">mdi-leaf</v-icon>
+                        </template>
+                      </v-list-item>
+                    </v-list>
+                  </template>
+                </v-card-text>
+              </v-card>
+            </v-col>
+            <v-col cols="12" md="9">
+              <v-row>
+                <v-col cols="12" md="6">
+                  <v-card class="mb-4">
+                    <v-card-title>Температура</v-card-title>
+                    <v-card-text>
+                      <v-skeleton-loader
+                        v-if="loading"
+                        type="image"
+                        height="300"
+                      ></v-skeleton-loader>
+                      <Line v-else :data="tempData" :options="chartOptions" />
+                    </v-card-text>
+                  </v-card>
+                </v-col>
+                <v-col cols="12" md="6">
+                  <v-card class="mb-4">
+                    <v-card-title>Влажность</v-card-title>
+                    <v-card-text>
+                      <v-skeleton-loader
+                        v-if="loading"
+                        type="image"
+                        height="300"
+                      ></v-skeleton-loader>
+                      <Line v-else :data="humidityData" :options="chartOptions" />
+                    </v-card-text>
+                  </v-card>
+                </v-col>
+              </v-row>
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col cols="12">
+              <v-card class="mt-4">
+                <v-data-table 
+                  class="elevation-1" 
+                  :items="plantItems" 
+                  :items-per-page="10"
+                  :loading="loading"
+                  loading-text="Загрузка данных..."
+                >
+                  <template #item.actions>
+                    <v-btn class="elevation-0" icon size="small"><v-icon>mdi-eye</v-icon></v-btn>
+                    <v-btn class="elevation-0" icon size="small"><v-icon>mdi-pencil</v-icon></v-btn>
+                    <v-btn class="elevation-0" icon size="small"><v-icon>mdi-delete</v-icon></v-btn>
+                  </template>
+                </v-data-table>
+              </v-card>
+            </v-col>
+          </v-row>
+          <v-container>
+            <v-card class="mt-6 mb-4">
+              <v-card-title> Таймлапс {{ experiment.name }}</v-card-title>
+              <v-card-text>
+                <VideoJsPlayer />
+              </v-card-text>
             </v-card>
-          </v-col>
-        </v-row>
-      </v-container>
-      <v-container>
-        <v-card class="mt-6 mb-4">
-          <v-card-title> Таймлапс {{ experiment.name }}</v-card-title>
-          <v-card-text>
-            <VideoJsPlayer />
-          </v-card-text>
-        </v-card>
+          </v-container>
+        </template>
+
+        <!-- Digital Phenotyping Tab -->
+        <template v-else-if="activeTab === 1">
+          <v-container class="pt-6">
+            <v-card class="pa-4">
+              <v-card-title class="d-flex align-center">
+                <v-icon start color="primary" class="mr-2">mdi-chart-line</v-icon>
+                Методы цифрового фенотипирования
+              </v-card-title>
+              <v-card-text>
+                <v-list>
+                  <v-list-item
+                    v-for="(option, index) in phenotypingOptions"
+                    :key="index"
+                    :title="option.title"
+                    :subtitle="option.description"
+                    class="mb-2"
+                  >
+                    <template v-slot:prepend>
+                      <v-icon :color="option.color">{{ option.icon }}</v-icon>
+                    </template>
+                    <template v-slot:append>
+                      <v-btn
+                        variant="text"
+                        color="primary"
+                        :to="option.route"
+                      >
+                        Начать анализ
+                      </v-btn>
+                    </template>
+                  </v-list-item>
+                </v-list>
+              </v-card-text>
+            </v-card>
+          </v-container>
+        </template>
       </v-container>
     </v-main>
 
@@ -284,5 +381,14 @@
 <style scoped>
 .v-application {
   background: #8ec46e58;
+}
+
+.v-list-item {
+  border-radius: 8px;
+  margin-bottom: 4px;
+}
+
+.v-list-item:hover {
+  background-color: rgba(0, 0, 0, 0.04);
 }
 </style>

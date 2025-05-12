@@ -23,7 +23,7 @@
           sources: [
             {
               src:
-                'https://media.geeksforgeeks.org/wp-content/uploads/20240514215354/Untitled-design-(8).mp4',
+                '../assets/timelapse_sunflower.mp4',
               type: 'video/mp4',
             },
           ],

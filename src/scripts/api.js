@@ -76,7 +76,7 @@ export async function importPlantsFromExcel(experimentId, file) {
     formData.append('file', file);
     
     const response = await axios.post(
-      `${baseURL}/experiment/${experimentId}/import-plants`,
+      `${baseURL}/experiment/${experimentId}/upload-plants`,
       formData,
       {
         headers: {
