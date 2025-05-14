@@ -90,3 +90,27 @@ export async function importPlantsFromExcel(experimentId, file) {
     throw error;
   }
 }
+
+export async function start_service(route, images) {
+  try {
+    const formData = new FormData();
+    images.forEach(image => {
+      formData.append('images', image);
+    });
+    console.log(formData)
+
+    const response = await axios.post(
+      `${baseURL}${route}`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error starting service:', error);
+    throw error;
+  }
+}

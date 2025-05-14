@@ -1,5 +1,5 @@
 <script setup>
-  import { getAllPlantsOfExperiment, getExperimentById, getHumidityData, getIndicatorType, getTemperatureData, importPlantsFromExcel } from '@/scripts/api.js';
+  import { getAllPlantsOfExperiment, getExperimentById, getHumidityData, getIndicatorType, getTemperatureData, importPlantsFromExcel, start_service } from '@/scripts/api.js';
   import { divideUID } from '@/scripts/internal.js';
   import { useRoute } from 'vue-router'
   import { ref } from 'vue'
@@ -190,13 +190,52 @@
 
   const phenotypingOptions = ref([
     {
-      title: 'Анализ роста растений',
-      description: 'Измерение высоты, площади листьев и скорости роста',
-      icon: 'mdi-chart-line',
-      color: 'success',
-      route: `/experiment/${experimentId}/growth-analysis`
+      title: 'Счётчик бобов',
+      description: 'Подсчёт количества бобов на фотографии',
+      icon: 'mdi-seed', 
+      service_types: [{
+        name: 'Ручная отметка uid растений',
+        description: 'Ручная отметка uid растений на фотографии',
+        icon: 'mdi-pencil',
+        route: `/service/bean-counter/${experimentId}/manual-annotation`,
+        disabled: true,
+      }, {
+        name: 'Автоматическая отметка uid растений',
+        description: 'Автоматическая отметка uid растений на фотографии',
+        icon: 'mdi-robot',
+        route: `/service/bean-counter/${experimentId}/automatic-annotation`,
+        disabled: false,
+      }],
     }
   ])
+
+  const phenotypingDialog = ref(false)
+  const selectedOption = ref(null)
+  const selectedService = ref(null)
+  const sourceImagesDialog = ref(false)
+  const selectedImages = ref([])
+
+  const openPhenotypingDialog = (option) => {
+    selectedOption.value = option
+    phenotypingDialog.value = true
+  }
+
+  const openSourceImagesDialog = (service) => {
+    selectedService.value = service
+    phenotypingDialog.value = false
+    sourceImagesDialog.value = true
+  }
+
+  const handleImagesSelected = (files) => {
+    selectedImages.value = files
+    console.log(selectedImages.value)
+  }
+
+  const startAnalysis = () => {
+    if (selectedService.value && selectedImages.value.length > 0) {
+      console.log(start_service(selectedService.value.route, selectedImages.value))
+    }
+  }
 </script>
 
 <template>
@@ -329,7 +368,7 @@
                       <v-btn
                         variant="text"
                         color="primary"
-                        :to="option.route"
+                        @click="openPhenotypingDialog(option)"
                       >
                         Начать анализ
                       </v-btn>
@@ -371,6 +410,129 @@
           :disabled="!file || !!errorMessage"
         >
           Импортировать
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
+  <!-- Phenotyping Options Dialog -->
+  <v-dialog v-model="phenotypingDialog" max-width="600px">
+    <v-card>
+      <v-card-title class="text-h5">
+        {{ selectedOption?.title }}
+      </v-card-title>
+
+      <v-card-text>
+        <p class="text-body-1 mb-4">{{ selectedOption?.description }}</p>
+        <v-list>
+          <v-list-item
+            v-for="(service, index) in selectedOption?.service_types"
+            :key="index"
+            :title="service.name"
+            :subtitle="service.description"
+            class="mb-2"
+            :disabled="service.disabled"
+          >
+            <template v-slot:prepend>
+              <v-icon :color="service.color">{{ service.icon }}</v-icon>
+            </template>
+            <template v-slot:append>
+              <v-btn
+                variant="text"
+                color="primary"
+                :disabled="service.disabled"
+                @click="openSourceImagesDialog(service)"
+              >
+                Выбрать
+              </v-btn>
+            </template>
+          </v-list-item>
+        </v-list>
+      </v-card-text>
+
+      <v-card-actions>
+        <v-spacer></v-spacer>
+        <v-btn
+          color="error"
+          variant="text"
+          @click="phenotypingDialog = false"
+        >
+          Закрыть
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
+  <!-- Source Images Selection Dialog -->
+  <v-dialog v-model="sourceImagesDialog" max-width="800px">
+    <v-card>
+      <v-card-title class="text-h5">
+        Выбор исходных изображений
+      </v-card-title>
+
+      <v-card-text>
+        <p class="text-body-1 mb-4">
+          Выберите изображения для {{ selectedService?.name }}
+        </p>
+        
+        <v-file-input
+          v-model="selectedImages"
+          multiple
+          accept="image/*"
+          label="Выберите изображения"
+          prepend-icon="mdi-camera"
+          show-size
+          counter
+          @update:model-value="handleImagesSelected"
+        >
+          <template v-slot:selection="{ fileNames }">
+            <template v-for="(fileName, index) in fileNames.slice(0, 3)" :key="index">
+              <v-chip
+                size="small"
+                label
+                color="primary"
+                class="me-2"
+              >
+                {{ fileName }}
+              </v-chip>
+            </template>
+            <v-chip
+              v-if="fileNames.length > 3"
+              size="small"
+              label
+              color="primary"
+              class="me-2"
+            >
+              +{{ fileNames.length - 3 }} ещё
+            </v-chip>
+          </template>
+        </v-file-input>
+
+        <v-alert
+          v-if="selectedImages.length > 0"
+          type="info"
+          class="mt-4"
+        >
+          Выбрано изображений: {{ selectedImages.length }}
+        </v-alert>
+      </v-card-text>
+
+      <v-card-actions>
+        <v-spacer></v-spacer>
+        <v-btn
+          color="error"
+          variant="text"
+          @click="sourceImagesDialog = false; selectedImages = []"
+        >
+          Отмена
+        </v-btn>
+        <v-btn
+          color="primary"
+          variant="text"
+          :disabled="selectedImages.length === 0"
+          @click="startAnalysis"
+        >
+          Начать анализ
         </v-btn>
       </v-card-actions>
     </v-card>
